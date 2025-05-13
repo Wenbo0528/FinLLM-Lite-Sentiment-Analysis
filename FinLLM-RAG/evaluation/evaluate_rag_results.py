@@ -1,202 +1,190 @@
 import json
 import os
-from pathlib import Path
 import logging
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import matplotlib.pyplot as plt
-import seaborn as sns
+from pathlib import Path
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+import numpy as np
 
-# 设置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# ==== Configuration ====
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_MODEL = "bigscience/bloom-560m"
+LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
+INFERENCE_RESULTS_PATH = os.path.join(PROJECT_ROOT, "inference", "rag_inference_results.json")
+OUTPUT_DIR = Path(__file__).parent.parent / "results"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# ==== Setup Logging ====
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# ==== RAG Evaluator Class ====
 class RAGEvaluator:
     def __init__(self, results_path):
         self.results_path = results_path
-        self.results = self._load_results()
-        # 修改输出目录为 results
-        self.output_dir = Path(__file__).parent.parent / "results"
-        # 确保输出目录存在
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-    def _load_results(self):
-        """加载推理结果"""
+        self.results = self.load_results()
+        self.output_dir = OUTPUT_DIR
+        self.non_rag_predictions = self.get_non_rag_predictions()
+
+    def load_results(self):
         with open(self.results_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    
+
     def get_non_rag_predictions(self):
-        """获取不使用 RAG 的预测结果"""
-        # 加载模型
-        base_model = "bigscience/bloom-560m"
-        lora_path = Path(__file__).parent.parent.parent / "FinLLM-Instruction-tuning" / "results" / "finllm-lora"
+        logger.info("Getting non-RAG predictions...")
         
-        tokenizer = AutoTokenizer.from_pretrained(base_model)
+        # Load model and tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
         tokenizer.pad_token = tokenizer.eos_token
-        
+
+        # Use BitsAndBytesConfig for quantization
         from transformers import BitsAndBytesConfig
         quantization_config = BitsAndBytesConfig(
             load_in_8bit=True,
             bnb_4bit_compute_dtype=torch.float16
         )
-        
+
         base = AutoModelForCausalLM.from_pretrained(
-            base_model,
+            BASE_MODEL,
             quantization_config=quantization_config,
             device_map="auto"
         )
         
-        model = PeftModel.from_pretrained(base, lora_path)
-        model.eval()
+        # Check if LoRA path exists
+        if not os.path.exists(LORA_PATH):
+            raise ValueError(f"LoRA model path does not exist: {LORA_PATH}")
         
-        non_rag_results = []
+        model = PeftModel.from_pretrained(base, LORA_PATH)
+        model.eval()
+
+        non_rag_predictions = []
         for item in self.results:
-            query = item['query']
-            # 构建不带上下文的 prompt
+            query = item["query"]
             prompt = f"Human: Determine the sentiment of the financial news as negative, neutral or positive: {query}\nAssistant:"
             
-            inputs = tokenizer(prompt, return_tensors="pt").to(self.device)
+            inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
             with torch.no_grad():
                 output = model.generate(**inputs, max_new_tokens=20)
             
             prediction = tokenizer.decode(output[0], skip_special_tokens=True)
             prediction = prediction.split("Assistant:")[-1].strip()
             
-            non_rag_results.append({
+            non_rag_predictions.append({
                 "query": query,
                 "prediction": prediction
             })
-        
-        # 保存非 RAG 预测结果
-        non_rag_path = self.output_dir / "non_rag_predictions.json"
-        with open(non_rag_path, 'w', encoding='utf-8') as f:
-            json.dump(non_rag_results, f, ensure_ascii=False, indent=2)
-        logging.info(f"非 RAG 预测结果已保存到: {non_rag_path}")
-        
-        return non_rag_results
-    
+
+        # Save non-RAG predictions
+        output_path = self.output_dir / "non_rag_predictions.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(non_rag_predictions, f, ensure_ascii=False, indent=2)
+        logger.info(f"Saved non-RAG predictions to {output_path}")
+
+        return non_rag_predictions
+
     def analyze_retrieval_quality(self):
-        """分析检索质量"""
-        scores = [item['retrieval']['score'] for item in self.results]
-        sources = [item['retrieval']['source'] for item in self.results]
+        logger.info("Analyzing retrieval quality...")
         
+        # Calculate average similarity score
+        scores = [item["retrieval"]["score"] for item in self.results]
         avg_score = sum(scores) / len(scores)
-        logging.info(f"\n📊 检索质量分析:")
-        logging.info(f"平均相似度分数: {avg_score:.3f}")
-        
-        source_counts = {}
-        for source in sources:
-            source_counts[source] = source_counts.get(source, 0) + 1
-        
-        logging.info("\n来源分布:")
-        for source, count in source_counts.items():
-            logging.info(f"{source}: {count} 篇文章")
-        
-        # 保存检索质量分析结果
-        retrieval_quality = {
-            "average_score": avg_score,
-            "source_distribution": source_counts
-        }
-        retrieval_path = self.output_dir / "retrieval_quality.json"
-        with open(retrieval_path, 'w', encoding='utf-8') as f:
-            json.dump(retrieval_quality, f, ensure_ascii=False, indent=2)
-        logging.info(f"检索质量分析结果已保存到: {retrieval_path}")
-        
-        return scores, sources
-    
-    def analyze_sentiment_distribution(self, results, label="RAG"):
-        """分析情感分布"""
-        sentiments = [item['prediction'].lower() for item in results]
-        sentiment_counts = {}
-        for sentiment in sentiments:
-            sentiment_counts[sentiment] = sentiment_counts.get(sentiment, 0) + 1
-        
-        logging.info(f"\n🎯 {label} 情感分布:")
-        for sentiment, count in sentiment_counts.items():
-            percentage = (count / len(sentiments)) * 100
-            logging.info(f"{sentiment}: {count} 条 ({percentage:.1f}%)")
-        
-        # 保存情感分布分析结果
-        sentiment_path = self.output_dir / f"{label.lower()}_sentiment_distribution.json"
-        with open(sentiment_path, 'w', encoding='utf-8') as f:
-            json.dump(sentiment_counts, f, ensure_ascii=False, indent=2)
-        logging.info(f"{label} 情感分布分析结果已保存到: {sentiment_path}")
-        
-        return sentiment_counts
-    
-    def plot_sentiment_comparison(self, rag_counts, non_rag_counts):
-        """绘制 RAG 和非 RAG 的情感分布对比图"""
-        plt.figure(figsize=(12, 6))
-        
-        # 准备数据
-        sentiments = sorted(set(rag_counts.keys()) | set(non_rag_counts.keys()))
-        rag_values = [rag_counts.get(s, 0) for s in sentiments]
-        non_rag_values = [non_rag_counts.get(s, 0) for s in sentiments]
-        
-        x = range(len(sentiments))
-        width = 0.35
-        
-        plt.bar([i - width/2 for i in x], rag_values, width, label='With RAG')
-        plt.bar([i + width/2 for i in x], non_rag_values, width, label='Without RAG')
-        
-        plt.xlabel('情感类别')
-        plt.ylabel('数量')
-        plt.title('RAG vs Non-RAG 情感分布对比')
-        plt.xticks(x, sentiments)
-        plt.legend()
-        
-        plt.savefig(self.output_dir / 'sentiment_comparison.png')
+        logger.info(f"Average similarity score: {avg_score:.4f}")
+
+        # Analyze source distribution
+        sources = [item["retrieval"]["source"] for item in self.results]
+        source_dist = Counter(sources)
+        logger.info("\nSource distribution:")
+        for source, count in source_dist.items():
+            logger.info(f"{source}: {count}")
+
+        # Plot retrieval scores distribution
+        plt.figure(figsize=(10, 6))
+        sns.histplot(scores, bins=20)
+        plt.title("Distribution of Retrieval Similarity Scores")
+        plt.xlabel("Similarity Score")
+        plt.ylabel("Count")
+        plt.savefig(self.output_dir / "retrieval_scores_distribution.png")
         plt.close()
-        logging.info(f"情感分布对比图已保存到: {self.output_dir / 'sentiment_comparison.png'}")
-    
+
+        # Save retrieval quality analysis
+        analysis = {
+            "average_similarity_score": avg_score,
+            "source_distribution": dict(source_dist)
+        }
+        output_path = self.output_dir / "retrieval_quality.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(analysis, f, ensure_ascii=False, indent=2)
+        logger.info(f"Saved retrieval quality analysis to {output_path}")
+
+    def analyze_sentiment_distribution(self):
+        logger.info("Analyzing sentiment distribution...")
+        
+        # Analyze RAG predictions
+        rag_sentiments = [item["prediction"].lower() for item in self.results]
+        rag_dist = Counter(rag_sentiments)
+        
+        # Analyze non-RAG predictions
+        non_rag_sentiments = [item["prediction"].lower() for item in self.non_rag_predictions]
+        non_rag_dist = Counter(non_rag_sentiments)
+
+        # Plot sentiment distribution comparison
+        plt.figure(figsize=(12, 6))
+        x = np.arange(len(set(rag_sentiments + non_rag_sentiments)))
+        width = 0.35
+
+        plt.bar(x - width/2, [rag_dist[s] for s in sorted(set(rag_sentiments + non_rag_sentiments))], 
+                width, label='RAG')
+        plt.bar(x + width/2, [non_rag_dist[s] for s in sorted(set(rag_sentiments + non_rag_sentiments))], 
+                width, label='Non-RAG')
+
+        plt.xlabel('Sentiment')
+        plt.ylabel('Count')
+        plt.title('Sentiment Distribution Comparison')
+        plt.xticks(x, sorted(set(rag_sentiments + non_rag_sentiments)))
+        plt.legend()
+        plt.savefig(self.output_dir / "sentiment_comparison.png")
+        plt.close()
+
+        # Save sentiment distributions
+        distributions = {
+            "rag_sentiment_distribution": dict(rag_dist),
+            "non_rag_sentiment_distribution": dict(non_rag_dist)
+        }
+        output_path = self.output_dir / "sentiment_distribution.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(distributions, f, ensure_ascii=False, indent=2)
+        logger.info(f"Saved sentiment distribution analysis to {output_path}")
+
     def generate_report(self):
-        """生成评估报告"""
-        # 分析检索质量
-        scores, sources = self.analyze_retrieval_quality()
+        logger.info("Generating evaluation report...")
         
-        # 获取非 RAG 预测结果
-        non_rag_results = self.get_non_rag_predictions()
-        
-        # 分析情感分布
-        rag_sentiment_counts = self.analyze_sentiment_distribution(self.results, "RAG")
-        non_rag_sentiment_counts = self.analyze_sentiment_distribution(non_rag_results, "Non-RAG")
-        
-        # 绘制对比图
-        self.plot_sentiment_comparison(rag_sentiment_counts, non_rag_sentiment_counts)
-        
-        # 保存详细报告
         report = {
             "total_queries": len(self.results),
             "retrieval_quality": {
-                "average_score": sum(scores) / len(scores),
-                "source_distribution": {source: sources.count(source) for source in set(sources)}
+                "average_similarity_score": sum(item["retrieval"]["score"] for item in self.results) / len(self.results),
+                "source_distribution": dict(Counter(item["retrieval"]["source"] for item in self.results))
             },
             "sentiment_distribution": {
-                "with_rag": rag_sentiment_counts,
-                "without_rag": non_rag_sentiment_counts
+                "rag": dict(Counter(item["prediction"].lower() for item in self.results)),
+                "non_rag": dict(Counter(item["prediction"].lower() for item in self.non_rag_predictions))
             }
         }
-        
-        report_path = self.output_dir / "evaluation_report.json"
-        with open(report_path, 'w', encoding='utf-8') as f:
+
+        output_path = self.output_dir / "evaluation_report.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
-        
-        logging.info(f"\n📝 评估报告已保存到: {report_path}")
+        logger.info(f"Saved evaluation report to {output_path}")
 
-def main():
-    # 获取推理结果文件路径
-    inference_dir = Path(__file__).parent.parent / "inference"
-    results_path = inference_dir / "rag_inference_results.json"
-    
-    if not results_path.exists():
-        logging.error(f"找不到推理结果文件: {results_path}")
-        return
-    
-    # 创建评估器并生成报告
-    evaluator = RAGEvaluator(results_path)
-    evaluator.generate_report()
-
+# ==== Main Program ====
 if __name__ == "__main__":
-    main() 
+    evaluator = RAGEvaluator(INFERENCE_RESULTS_PATH)
+    evaluator.analyze_retrieval_quality()
+    evaluator.analyze_sentiment_distribution()
+    evaluator.generate_report() 

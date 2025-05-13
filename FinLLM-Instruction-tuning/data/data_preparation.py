@@ -1,31 +1,45 @@
 import json
+import os
 from pathlib import Path
 
-# 手动写几条测试样本（你可以替换成从 CSV/JSON 加载）
-examples = [
-    {"text": "Tesla stock rose 5% after strong earnings.", "label": "positive"},
-    {"text": "Company announces layoffs of 1000 employees.", "label": "negative"},
-    {"text": "The market closed with little change today.", "label": "neutral"},
-]
+# ==== Configuration ====
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "raw_data.json")
+OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
 
-# 模板（指令）
-instruction = "Determine the sentiment of the financial news as negative, neutral or positive: "
+# ==== Data Preparation Function ====
+def prepare_instruction_data():
+    """
+    Prepare instruction-formatted data for fine-tuning.
+    Converts raw data into instruction-output pairs.
+    """
+    # Load raw data
+    with open(RAW_DATA_PATH, 'r', encoding='utf-8') as f:
+        raw_data = json.load(f)
 
-# 格式化为 instruction-tuning 风格
-formatted = [
-    {
-        "text": f"Human: {instruction}{ex['text']}\nAssistant: {ex['label']}"
-    }
-    for ex in examples
-]
+    # Format data into instruction-output pairs
+    formatted_data = []
+    for item in raw_data:
+        instruction = f"Determine the sentiment of the financial news as negative, neutral or positive: {item['text']}"
+        output = item['sentiment']
+        
+        formatted_data.append({
+            "instruction": instruction,
+            "output": output
+        })
 
-# 写入 JSONL 文件
-output_path = Path("data/instruction_formatted_data.jsonl")
-output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Save formatted data
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        for item in formatted_data:
+            f.write(json.dumps(item, ensure_ascii=False) + '\n')
 
-with open(output_path, "w", encoding="utf-8") as f:
-    for item in formatted:
-        json.dump(item, f, ensure_ascii=False)
-        f.write("\n")
+    print(f"✅ Data preparation completed. Output saved to: {OUTPUT_PATH}")
+    print(f"📊 Total samples: {len(formatted_data)}")
 
-print(f"✅ 写入 {len(formatted)} 条数据到 {output_path}")
+# ==== Main Program ====
+if __name__ == "__main__":
+    # Ensure output directory exists
+    Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Run data preparation
+    prepare_instruction_data()

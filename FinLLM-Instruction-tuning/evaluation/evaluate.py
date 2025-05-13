@@ -1,3 +1,4 @@
+import os
 import json
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -6,11 +7,23 @@ from peft import PeftModel
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import numpy as np
 from tqdm import tqdm
-import os
-import sys
+import logging
+from pathlib import Path
 
-# 获取项目根目录的绝对路径
+# ==== Configuration ====
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_MODEL = "bigscience/bloom-560m"
+LORA_PATH = os.path.join(PROJECT_ROOT, "model_lora")
+TEST_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
+OUTPUT_DIR = Path(__file__).parent / "results"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ==== Setup Logging ====
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 class EvaluationDataset(Dataset):
     @staticmethod
@@ -135,56 +148,81 @@ def calculate_metrics(predictions, true_labels):
         'f1': f1
     }
 
-def main():
-    # 配置参数
-    base_model_path = "bigscience/bloom-560m"  # 使用较小的模型
-    lora_model_path = os.path.join(PROJECT_ROOT, "model_lora")
-    test_data_path = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
-    
-    # 设置设备
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-    
-    # 加载模型和tokenizer
-    print("Loading model and tokenizer...")
-    model, tokenizer = load_model_and_tokenizer(base_model_path, lora_model_path)
-    
-    # 准备测试数据集
-    print("Preparing test dataset...")
-    test_dataset = EvaluationDataset(test_data_path, tokenizer)
-    
-    # 生成预测
-    print("Generating predictions...")
-    predictions, true_labels = generate_predictions(model, tokenizer, test_dataset, device)
-    
-    # 计算评估指标
-    print("Calculating metrics...")
-    metrics = calculate_metrics(predictions, true_labels)
-    
-    # 打印评估结果
-    print("\nEvaluation Results:")
-    print(f"Accuracy: {metrics['accuracy']:.4f}")
-    print(f"Precision: {metrics['precision']:.4f}")
-    print(f"Recall: {metrics['recall']:.4f}")
-    print(f"F1 Score: {metrics['f1']:.4f}")
-    
-    # 创建结果目录
-    results_dir = os.path.join(PROJECT_ROOT, "results")
-    os.makedirs(results_dir, exist_ok=True)
+# ==== Model Evaluation Class ====
+class ModelEvaluator:
+    def __init__(self, test_data_path):
+        self.test_data_path = test_data_path
+        self.test_data = self.load_test_data()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = None
+        self.tokenizer = None
 
+    def load_test_data(self):
+        with open(self.test_data_path, 'r', encoding='utf-8') as f:
+            return [json.loads(line) for line in f]
 
-    # 保存评估结果
-    results = {
-        'metrics': metrics,
-        'predictions': predictions,
-        'true_labels': true_labels
-    }
-    
-    results_path = os.path.join(results_dir, "evaluation_results.json")
-    with open(results_path, 'w', encoding='utf-8') as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
-    
-    print(f"\n✅ 评估结果已保存到 {results_path}")
+    def load_model(self):
+        logger.info("Loading model and tokenizer...")
+        
+        # Load tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
 
+        # Load base model
+        base_model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL,
+            torch_dtype=torch.float16,
+            device_map="auto"
+        )
+
+        # Check if LoRA path exists
+        if not os.path.exists(LORA_PATH):
+            raise ValueError(f"LoRA model path does not exist: {LORA_PATH}")
+
+        # Load LoRA model
+        self.model = PeftModel.from_pretrained(base_model, LORA_PATH)
+        self.model.eval()
+        logger.info("Model and tokenizer loaded successfully")
+
+    def evaluate(self):
+        if not self.model:
+            self.load_model()
+
+        logger.info("Starting evaluation...")
+        results = []
+
+        for item in self.test_data:
+            instruction = item["instruction"]
+            expected_output = item["output"]
+
+            # Build prompt
+            prompt = f"Human: {instruction}\nAssistant:"
+            
+            # Generate response
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                output = self.model.generate(**inputs, max_new_tokens=100)
+            
+            # Decode response
+            response = self.tokenizer.decode(output[0], skip_special_tokens=True)
+            response = response.split("Assistant:")[-1].strip()
+
+            # Save result
+            results.append({
+                "instruction": instruction,
+                "expected_output": expected_output,
+                "model_output": response
+            })
+
+        # Save evaluation results
+        output_path = OUTPUT_DIR / "evaluation_results.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, ensure_ascii=False, indent=2)
+        logger.info(f"Evaluation results saved to {output_path}")
+
+        return results
+
+# ==== Main Program ====
 if __name__ == "__main__":
-    main() 
+    evaluator = ModelEvaluator(TEST_DATA_PATH)
+    evaluator.evaluate() 

@@ -5,7 +5,7 @@ from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
-# ==== 配置项 ====
+# ==== Configuration ====
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_MODEL = "bigscience/bloom-560m"
 LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
@@ -13,7 +13,7 @@ RAG_DATA_PATH = os.path.join(PROJECT_ROOT, "data_sources", "rag_context_data.jso
 EVAL_RESULTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_inference_results.json")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# ==== 背景检索函数 ====
+# ==== Context Retrieval Function ====
 def retrieve_context(query, rag_data_path):
     def overlap(query, context):
         q_words = set(query.lower().split())
@@ -47,16 +47,16 @@ def retrieve_context(query, rag_data_path):
         "url": best_url
     }
 
-# ==== Prompt 拼接 ====
+# ==== Prompt Construction ====
 def build_prompt(context, query):
     return f"{context}\n\nHuman: Determine the sentiment of the financial news as negative, neutral or positive: {query}\nAssistant:"
 
-# ==== 模型加载 + 推理 ====
+# ==== Model Loading and Inference ====
 def run_inference(prompt):
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     tokenizer.pad_token = tokenizer.eos_token
 
-    # 使用 BitsAndBytesConfig 进行量化
+    # Use BitsAndBytesConfig for quantization
     from transformers import BitsAndBytesConfig
     quantization_config = BitsAndBytesConfig(
         load_in_8bit=True,
@@ -69,7 +69,7 @@ def run_inference(prompt):
         device_map="auto"
     )
     
-    # 检查 LoRA 路径是否存在
+    # Check if LoRA path exists
     if not os.path.exists(LORA_PATH):
         raise ValueError(f"LoRA model path does not exist: {LORA_PATH}")
     
@@ -84,52 +84,52 @@ def run_inference(prompt):
     result = tokenizer.decode(output[0], skip_special_tokens=True)
     return result.split("Assistant:")[-1].strip()
 
-# ==== 保存评估结果 ====
+# ==== Save Evaluation Results ====
 def save_eval_results(results, output_path):
-    # 确保输出目录存在
+    # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
-# ==== 主程序 ====
+# ==== Main Program ====
 if __name__ == "__main__":
-    # 读取所有查询
+    # Read all queries
     with open(RAG_DATA_PATH, 'r', encoding='utf-8') as f:
         queries = [json.loads(line)["query"] for line in f]
 
     eval_results = []
     
     for query in queries:
-        print(f"\n🟡 处理查询：{query}")
+        print(f"\n🟡 Processing query: {query}")
         
-        # 检索背景信息
+        # Retrieve context
         retrieval_result = retrieve_context(query, RAG_DATA_PATH)
         context = retrieval_result["context"]
         
         if not context:
-            print(f"❌ 未找到相关背景信息")
+            print(f"❌ No relevant context found")
             continue
             
-        print(f"\n🟢 检索到的背景信息：")
-        print(f"来源: {retrieval_result['source']}")
-        print(f"标题: {retrieval_result['title']}")
+        print(f"\n🟢 Retrieved context:")
+        print(f"Source: {retrieval_result['source']}")
+        print(f"Title: {retrieval_result['title']}")
         print(f"URL: {retrieval_result['url']}")
-        print(f"相似度分数: {retrieval_result['score']:.2f}")
-        print(f"内容: {context[:200]}...")
+        print(f"Similarity score: {retrieval_result['score']:.2f}")
+        print(f"Content: {context[:200]}...")
 
-        # 构建 prompt 并运行推理
+        # Build prompt and run inference
         prompt = build_prompt(context, query)
         prediction = run_inference(prompt)
-        print(f"\n✅ 模型预测结果：{prediction}")
+        print(f"\n✅ Model prediction: {prediction}")
 
-        # 保存结果
+        # Save results
         eval_results.append({
             "query": query,
             "retrieval": retrieval_result,
             "prediction": prediction
         })
 
-    # 保存所有评估结果
+    # Save all evaluation results
     save_eval_results(eval_results, EVAL_RESULTS_PATH)
-    print(f"\n📊 已保存 {len(eval_results)} 条评估结果到 {EVAL_RESULTS_PATH}")
+    print(f"\n📊 Saved {len(eval_results)} evaluation results to {EVAL_RESULTS_PATH}")
