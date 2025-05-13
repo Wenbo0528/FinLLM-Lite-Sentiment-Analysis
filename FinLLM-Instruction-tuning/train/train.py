@@ -58,7 +58,8 @@ def main():
     # 配置参数
     model_name = "bigscience/bloom-560m"  # 使用较小的模型进行测试
     data_path = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
-    output_dir = os.path.join(PROJECT_ROOT, "results", "finllm-lora")
+    # 修改输出目录为 model_lora
+    output_dir = os.path.join(PROJECT_ROOT, "model_lora")
     
     # 确保输出目录存在
     os.makedirs(output_dir, exist_ok=True)

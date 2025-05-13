@@ -138,7 +138,7 @@ def calculate_metrics(predictions, true_labels):
 def main():
     # 配置参数
     base_model_path = "bigscience/bloom-560m"  # 使用较小的模型
-    lora_model_path = os.path.join(PROJECT_ROOT, "results", "finllm-lora")
+    lora_model_path = os.path.join(PROJECT_ROOT, "model_lora")
     test_data_path = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
     
     # 设置设备

@@ -1,0 +1,30 @@
+[
+  {
+    "query": "Tesla stock price movement",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Tesla stock price movement\nAss"
+  },
+  {
+    "query": "JPMorgan stock analysis",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: JPMorgan stock analysis"
+  },
+  {
+    "query": "Apple earnings report",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Apple earnings report\nAssistant"
+  },
+  {
+    "query": "Microsoft cloud growth",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Microsoft cloud growth\nAssistant"
+  },
+  {
+    "query": "Goldman Sachs market outlook",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Goldman Sachs market outlook\nAss"
+  },
+  {
+    "query": "Bank of America financial results",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Bank of America financial results"
+  },
+  {
+    "query": "Meta AI development",
+    "prediction": "Determine the sentiment of the financial news as negative, neutral or positive: Meta AI development\nAssistant"
+  }
+]
