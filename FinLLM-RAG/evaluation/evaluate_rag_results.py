@@ -3,7 +3,7 @@ import os
 import logging
 from pathlib import Path
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -11,12 +11,28 @@ from collections import Counter
 import numpy as np
 
 # ==== Configuration ====
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_MODEL = "bigscience/bloom-560m"
-LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
-INFERENCE_RESULTS_PATH = os.path.join(PROJECT_ROOT, "inference", "rag_inference_results.json")
-OUTPUT_DIR = Path(__file__).parent.parent / "results"
+# Original paths (commented for local environment)
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_MODEL = "deepseek-ai/deepseek-llm-1.3b-base"
+# LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
+# INFERENCE_RESULTS_PATH = os.path.join(PROJECT_ROOT, "inference", "rag_inference_results.json")
+# OUTPUT_DIR = Path(__file__).parent.parent / "results"
+
+# Google Drive paths and model configuration
+DRIVE_ROOT = "/content/drive/MyDrive/Columbia_Semester3/5293/Final/FinLLM-Sentiment-Analysis"
+BASE_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+LORA_PATH = os.path.join(DRIVE_ROOT, "FinLLM-Instruction-tuning/model_lora")
+INFERENCE_RESULTS_PATH = os.path.join(DRIVE_ROOT, "FinLLM-RAG/inference/rag_inference_results.json")
+OUTPUT_DIR = Path(DRIVE_ROOT) / "FinLLM-RAG/results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ==== Model Configuration ====
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,  # 更新为4-bit量化
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
 
 # ==== Setup Logging ====
 logging.basicConfig(
@@ -41,20 +57,19 @@ class RAGEvaluator:
         logger.info("Getting non-RAG predictions...")
         
         # Load model and tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-        tokenizer.pad_token = tokenizer.eos_token
-
-        # Use BitsAndBytesConfig for quantization
-        from transformers import BitsAndBytesConfig
-        quantization_config = BitsAndBytesConfig(
-            load_in_8bit=True,
-            bnb_4bit_compute_dtype=torch.float16
+        tokenizer = AutoTokenizer.from_pretrained(
+            BASE_MODEL,
+            trust_remote_code=True,
+            padding_side="right",
+            use_fast=False
         )
+        tokenizer.pad_token = tokenizer.eos_token
 
         base = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL,
-            quantization_config=quantization_config,
-            device_map="auto"
+            quantization_config=bnb_config,
+            device_map="auto",
+            trust_remote_code=True
         )
         
         # Check if LoRA path exists
@@ -69,12 +84,26 @@ class RAGEvaluator:
             query = item["query"]
             prompt = f"Human: Determine the sentiment of the financial news as negative, neutral or positive: {query}\nAssistant:"
             
-            inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
-            with torch.no_grad():
-                output = model.generate(**inputs, max_new_tokens=20)
+            inputs = tokenizer(
+                prompt,
+                return_tensors="pt",
+                truncation=True,
+                max_length=512
+            ).to("cuda")
             
-            prediction = tokenizer.decode(output[0], skip_special_tokens=True)
-            prediction = prediction.split("Assistant:")[-1].strip()
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs,
+                    max_length=512,
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    top_p=0.9,
+                    do_sample=True,
+                    pad_token_id=tokenizer.pad_token_id
+                )
+            
+            prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            prediction = prediction.replace(prompt, "").strip()
             
             non_rag_predictions.append({
                 "query": query,

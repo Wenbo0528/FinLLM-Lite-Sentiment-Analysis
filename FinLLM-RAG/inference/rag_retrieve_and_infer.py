@@ -2,16 +2,32 @@ import json
 import torch
 import os
 from pathlib import Path
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
 # ==== Configuration ====
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_MODEL = "bigscience/bloom-560m"
-LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
-RAG_DATA_PATH = os.path.join(PROJECT_ROOT, "data_sources", "rag_context_data.jsonl")
-EVAL_RESULTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_inference_results.json")
+# Original paths (commented for local environment)
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_MODEL = "deepseek-ai/deepseek-llm-1.3b-base"
+# LORA_PATH = os.path.join(PROJECT_ROOT, "..", "FinLLM-Instruction-tuning", "model_lora")
+# RAG_DATA_PATH = os.path.join(PROJECT_ROOT, "data_sources", "rag_context_data.jsonl")
+# EVAL_RESULTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_inference_results.json")
+
+# Google Drive paths and model configuration
+DRIVE_ROOT = "/content/drive/MyDrive/Columbia_Semester3/5293/Final/FinLLM-Sentiment-Analysis"
+BASE_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+LORA_PATH = os.path.join(DRIVE_ROOT, "FinLLM-Instruction-tuning/model_lora")
+RAG_DATA_PATH = os.path.join(DRIVE_ROOT, "FinLLM-RAG/data_sources/rag_context_data.jsonl")
+EVAL_RESULTS_PATH = os.path.join(DRIVE_ROOT, "FinLLM-RAG/inference/rag_inference_results.json")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# ==== Model Configuration ====
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,  # 更新为4-bit量化
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
 
 # ==== Context Retrieval Function ====
 def retrieve_context(query, rag_data_path):
@@ -53,20 +69,19 @@ def build_prompt(context, query):
 
 # ==== Model Loading and Inference ====
 def run_inference(prompt):
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    tokenizer.pad_token = tokenizer.eos_token
-
-    # Use BitsAndBytesConfig for quantization
-    from transformers import BitsAndBytesConfig
-    quantization_config = BitsAndBytesConfig(
-        load_in_8bit=True,
-        bnb_4bit_compute_dtype=torch.float16
+    tokenizer = AutoTokenizer.from_pretrained(
+        BASE_MODEL,
+        trust_remote_code=True,
+        padding_side="right",
+        use_fast=False
     )
+    tokenizer.pad_token = tokenizer.eos_token
 
     base = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
-        quantization_config=quantization_config,
-        device_map="auto"
+        quantization_config=bnb_config,
+        device_map="auto",
+        trust_remote_code=True
     )
     
     # Check if LoRA path exists
@@ -76,13 +91,26 @@ def run_inference(prompt):
     model = PeftModel.from_pretrained(base, LORA_PATH)
     model.eval()
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512
+    ).to(DEVICE)
 
     with torch.no_grad():
-        output = model.generate(**inputs, max_new_tokens=20)
+        outputs = model.generate(
+            **inputs,
+            max_length=512,
+            num_return_sequences=1,
+            temperature=0.7,
+            top_p=0.9,
+            do_sample=True,
+            pad_token_id=tokenizer.pad_token_id
+        )
 
-    result = tokenizer.decode(output[0], skip_special_tokens=True)
-    return result.split("Assistant:")[-1].strip()
+    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return result.replace(prompt, "").strip()
 
 # ==== Save Evaluation Results ====
 def save_eval_results(results, output_path):
