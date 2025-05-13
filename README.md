@@ -1,205 +1,139 @@
 # FinLLM: Financial News Sentiment Analysis System
 
-FinLLM is a financial news sentiment analysis system based on large language models, consisting of two main modules: instruction fine-tuning and RAG enhancement. The system can accurately analyze the sentiment of financial news to provide reference for investment decisions.
+A comprehensive system for financial news sentiment analysis using Instruction Tuning and RAG (Retrieval-Augmented Generation).
 
 ## Project Structure
 
 ```
 FinLLM/
-├── FinLLM-Instruction-tuning/    # Instruction Fine-tuning Module
-│   ├── data/                     # Training Data
-│   ├── train/                    # Training Scripts
-│   ├── evaluation/              # Evaluation Scripts
-│   ├── model_lora/              # Fine-tuned Model
-│   └── README.md               # Module Documentation
+├── FinLLM-Instruction-tuning/    # Instruction tuning module
+│   ├── data/                     # Training data
+│   ├── train/                    # Training scripts
+│   ├── evaluation/               # Evaluation scripts
+│   └── model_lora/              # Fine-tuned model
 │
-├── FinLLM-RAG/                  # RAG Enhancement Module
-│   ├── data_sources/           # Data Sources and Crawlers
-│   ├── inference/              # Inference Scripts
-│   ├── evaluation/            # Evaluation Scripts
-│   ├── results/               # Evaluation Results
-│   └── README.md             # Module Documentation
+├── FinLLM-RAG/                   # RAG module
+│   ├── data_sources/            # News data collection
+│   ├── inference/               # RAG inference
+│   └── evaluation/              # RAG evaluation
 │
-└── README.md                  # Project Documentation
+├── scripts/                      # Quick start scripts
+│   ├── train.bat                # Windows training script
+│   ├── train.sh                 # Linux/Mac training script
+│   ├── run_rag.bat              # Windows RAG script
+│   ├── run_rag.sh               # Linux/Mac RAG script
+│   ├── evaluate.bat             # Windows evaluation script
+│   └── evaluate.sh              # Linux/Mac evaluation script
+│
+└── requirements.txt             # Project dependencies
 ```
 
-## System Architecture
+## Installation
 
-The system consists of two main modules:
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/FinLLM-Sentiment-Analysis.git
+cd FinLLM-Sentiment-Analysis
+```
 
-1. **Instruction Fine-tuning Module**:
-   - Based on BLOOM-560M model
-   - Efficient fine-tuning using LoRA
-   - Supports 8-bit quantization training
-   - Optimized for financial sentiment analysis tasks
+2. Create and activate a virtual environment (recommended):
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-2. **RAG Enhancement Module**:
-   - Real-time financial news crawling
-   - Intelligent context retrieval
-   - Multi-source data fusion
-   - Comparative evaluation system
+# Linux/Mac
+python -m venv venv
+source venv/bin/activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## Quick Start
+
+### Training
+
+1. Windows users:
+```bash
+scripts\train.bat
+```
+
+2. Linux/Mac users:
+```bash
+chmod +x scripts/*.sh
+./scripts/train.sh
+```
+
+### Running RAG Inference
+
+1. Windows users:
+```bash
+scripts\run_rag.bat
+```
+
+2. Linux/Mac users:
+```bash
+./scripts/run_rag.sh
+```
+
+### Evaluation
+
+1. Windows users:
+```bash
+scripts\evaluate.bat
+```
+
+2. Linux/Mac users:
+```bash
+./scripts/evaluate.sh
+```
+
+## System Features
+
+1. **Instruction Tuning**
+   - Fine-tunes BLOOM model for sentiment analysis
+   - Uses LoRA for efficient training
+   - Supports custom instruction formats
+
+2. **RAG Enhancement**
+   - Real-time financial news retrieval
+   - Context-aware sentiment analysis
+   - Improved accuracy with relevant context
+
+3. **Evaluation**
+   - Comprehensive metrics
+   - Comparative analysis
+   - Visualization support
 
 ## Requirements
 
 - Python 3.8+
-- CUDA-compatible GPU (8GB+ VRAM recommended)
-- Stable internet connection
-
-## Quick Start
-
-1. Clone the project:
-```bash
-git clone https://github.com/yourusername/FinLLM.git
-cd FinLLM
-```
-
-2. Install dependencies:
-```bash
-# Install base dependencies
-pip install -r requirements.txt
-
-# Install instruction fine-tuning module dependencies
-cd FinLLM-Instruction-tuning
-pip install -r requirements.txt
-
-# Install RAG module dependencies
-cd ../FinLLM-RAG
-pip install -r requirements.txt
-```
-
-3. Train the model:
-```bash
-cd FinLLM-Instruction-tuning/train
-python train.py
-```
-
-4. Run the RAG system:
-```bash
-cd FinLLM-RAG/data_sources
-python get_rag_context_data.py  # Get news data
-
-cd ../inference
-python rag_retrieve_and_infer.py  # Run inference
-```
-
-5. Evaluate results:
-```bash
-cd FinLLM-RAG/evaluation
-python evaluate_rag_results.py
-```
-
-## Key Features
-
-1. **Efficient Training**:
-   - LoRA fine-tuning reduces VRAM usage
-   - 8-bit quantization support
-   - Gradient checkpoint optimization
-
-2. **Real-time Data**:
-   - Multi-source news crawling
-   - Intelligent anti-crawling
-   - Automatic data updates
-
-3. **Intelligent Analysis**:
-   - Context-enhanced inference
-   - Multi-source data fusion
-   - Sentiment distribution analysis
-
-4. **Comprehensive Evaluation**:
-   - RAG vs non-RAG comparison
-   - Detailed evaluation metrics
-   - Visualization analysis
-
-## Performance Metrics
-
-- Model size: 560M parameters
-- Training VRAM: ~4GB
-- Inference VRAM: ~2GB
-- Supports FP16 training and inference
-
-## Usage Examples
-
-1. Basic sentiment analysis:
-```python
-from FinLLM_Instruction_tuning.inference import analyze_sentiment
-result = analyze_sentiment("Tesla stock rose 5% after strong earnings")
-```
-
-2. RAG-enhanced analysis:
-```python
-from FinLLM_RAG.inference import analyze_with_rag
-result = analyze_with_rag("Tesla stock rose 5% after strong earnings")
-```
-
-## Project Characteristics
-
-1. **Modular Design**:
-   - Clear module separation
-   - Independent configuration management
-   - Easy to extend and maintain
-
-2. **Resource Optimization**:
-   - VRAM usage optimization
-   - Training speed optimization
-   - Inference efficiency optimization
-
-3. **Practical Features**:
-   - Complete evaluation system
-   - Detailed documentation
-   - Rich usage examples
+- CUDA-capable GPU (recommended)
+- 16GB+ RAM
+- 20GB+ free disk space
 
 ## Important Notes
 
-1. **Hardware Requirements**:
-   - GPU VRAM ≥ 8GB
-   - CUDA support
-   - SSD recommended
+1. **Hardware Requirements**
+   - GPU with 8GB+ VRAM recommended
+   - Sufficient disk space for model storage
 
-2. **Data Requirements**:
-   - Regular training data updates
-   - Ensure data source accessibility
-   - Monitor data quality
+2. **Data Requirements**
+   - Internet connection for news retrieval
+   - Storage space for news corpus
 
-3. **Usage Recommendations**:
-   - Regular model performance evaluation
-   - Timely news data updates
-   - Monitor system resource usage
-
-## Future Plans
-
-1. Feature Expansion:
-   - Support more financial data sources
-   - Add more analysis dimensions
-   - Optimize retrieval algorithms
-
-2. Performance Optimization:
-   - Reduce resource usage
-   - Improve inference speed
-   - Optimize training efficiency
-
-3. Deployment Optimization:
-   - Provide API interface
-   - Support batch processing
-   - Add monitoring system
-
-## Contributing
-
-Issues and Pull Requests are welcome. Before submitting code, please ensure:
-1. Code follows PEP 8 standards
-2. Necessary comments and documentation are added
-3. Related test cases are updated
-4. All tests pass
+3. **Usage Tips**
+   - Start with small batch sizes
+   - Monitor GPU memory usage
+   - Regular model evaluation
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contact
 
-- Project Maintainer: [Your Name]
-- Email: [Your Email]
-- GitHub: [Your GitHub]
-
-## Acknowledgments
-
-Thanks to all developers who have contributed to this project.
+For questions and support, please open an issue in the GitHub repository.
