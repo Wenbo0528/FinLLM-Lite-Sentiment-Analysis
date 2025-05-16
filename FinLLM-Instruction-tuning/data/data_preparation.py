@@ -150,12 +150,12 @@ def process_dataset(dataset_config):
             else:
                 test_data.append(formatted_item)
             
-        print(f"✅ Successfully processed {len(dataset)} samples from {dataset_config['name']}")
+        print(f"[SUCCESS] Successfully processed {len(dataset)} samples from {dataset_config['name']}")
         print(f"   - Training samples: {len(train_data)}")
         print(f"   - Testing samples: {len(test_data)}")
         
     except Exception as e:
-        print(f"❌ Error processing dataset {dataset_config['name']}: {str(e)}")
+        print(f"[ERROR] Error processing dataset {dataset_config['name']}: {str(e)}")
     
     return train_data, test_data
 
@@ -182,15 +182,15 @@ def prepare_instruction_data():
     with open(TRAIN_OUTPUT_PATH, 'w', encoding='utf-8') as f:
         for item in all_train_data:
             f.write(json.dumps(item, ensure_ascii=False) + '\n')
-    print(f"\n✅ Training data saved to: {TRAIN_OUTPUT_PATH}")
-    print(f"📊 Total training samples: {len(all_train_data)}")
+    print(f"\n[SUCCESS] Training data saved to: {TRAIN_OUTPUT_PATH}")
+    print(f"[INFO] Total training samples: {len(all_train_data)}")
 
     # Save test data
     with open(TEST_OUTPUT_PATH, 'w', encoding='utf-8') as f:
         for item in all_test_data:
             f.write(json.dumps(item, ensure_ascii=False) + '\n')
-    print(f"✅ Test data saved to: {TEST_OUTPUT_PATH}")
-    print(f"📊 Total test samples: {len(all_test_data)}")
+    print(f"[SUCCESS] Test data saved to: {TEST_OUTPUT_PATH}")
+    print(f"[INFO] Total test samples: {len(all_test_data)}")
 
 # ==== Main Program ====
 if __name__ == "__main__":

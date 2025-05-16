@@ -1,142 +1,118 @@
-# FinLLM Instruction Fine-tuning Module
+# FinLLM-Instruction-tuning
 
-This module implements instruction fine-tuning for the FinLLM model, enabling it to perform financial sentiment analysis tasks.
+基于DeepSeek-R1-Distill-Qwen-1.5B模型的金融情绪分析指令微调项目。本项目使用QLoRA（4-bit量化+LoRA）技术对模型进行高效微调，使其能够更好地理解和分析金融文本中的情绪倾向。
 
-## Project Structure
+## 项目特点
+
+- 使用QLoRA技术进行高效微调，显著降低显存需求
+- 采用Instruction-tuning方法，提高模型对金融文本的理解能力
+- 针对金融领域情绪分析任务进行优化
+- 支持模型量化部署，便于实际应用
+
+## 技术细节
+
+### 模型架构
+- 基础模型：DeepSeek-R1-Distill-Qwen-1.5B
+- 微调方法：QLoRA (4-bit量化 + LoRA)
+- LoRA配置：
+  - rank (r) = 4
+  - alpha = 8
+  - 目标模块：["q_proj", "k_proj", "v_proj", "o_proj"]
+  - dropout = 0.05
+
+### 训练配置
+- 训练轮数：2 epochs
+- 批次大小：4 (per device)
+- 梯度累积步数：8
+- 学习率：1e-4
+- 权重衰减：0.01
+- 预热步数：10000
+- 保存步数：1000
+- 使用FP16训练
+
+## 项目结构
 
 ```
 FinLLM-Instruction-tuning/
-├── data/                     # Training Data
-│   └── instruction_formatted_data.jsonl
-├── train/                    # Training Scripts
-│   └── train.py
-├── evaluation/              # Evaluation Scripts
-│   └── evaluate.py
-├── model_lora/              # Fine-tuned Model
-└── README.md               # Module Documentation
+├── data/                    # 训练数据目录
+│   └── instruction_formatted_data.jsonl  # 指令格式的训练数据
+├── train/                   # 训练相关代码
+│   └── train.py            # 训练脚本
+├── model_lora/             # 保存的LoRA模型权重
+├── results/                # 训练结果和评估指标
+├── Inference/             # 推理相关代码
+│   ├── inference.py       # 微调后模型的推理脚本
+│   └── inference_origin.py # 原始模型的推理脚本
+└── backup_py/             # 备份代码
 ```
 
-## Features
+## 使用方法
 
-1. **Efficient Training**:
-   - LoRA-based fine-tuning
-   - 8-bit quantization support
-   - Gradient checkpoint optimization
-   - Memory-efficient training
+### 环境配置
 
-2. **Model Architecture**:
-   - Base model: BLOOM-560M
-   - LoRA configuration optimized for financial tasks
-   - FP16 training support
-
-3. **Training Process**:
-   - Custom instruction dataset
-   - Optimized training parameters
-   - Automatic model saving
-
-## Requirements
-
-- Python 3.8+
-- CUDA-compatible GPU (8GB+ VRAM recommended)
-- PyTorch 2.0+
-- Transformers 4.30+
-- PEFT 0.4+
-
-## Quick Start
-
-1. Install dependencies:
+1. 安装依赖：
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Prepare training data:
+2. 准备训练数据：
+- 将训练数据放在 `data/instruction_formatted_data.jsonl` 中
+- 数据格式应为JSONL，每行包含instruction和output字段
+
+### 训练模型
+
+使用提供的训练脚本进行模型训练：
+
 ```bash
-# Ensure your data is in JSONL format
-# Each line should contain:
-# {
-#   "instruction": "Your instruction here",
-#   "output": "Expected output here"
-# }
+# Linux/Mac
+./scripts/train.sh --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
+
+# Windows
+scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
 ```
 
-3. Start training:
+### 模型推理
+
+训练完成后，可以使用训练好的模型进行推理：
+
 ```bash
-cd train
-python train.py
+# Linux/Mac
+./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt"
+
+# Windows
+scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt"
 ```
 
-4. Evaluate the model:
-```bash
-cd evaluation
-python evaluate.py
-```
+## 性能优化
 
-## Training Configuration
+1. 显存优化：
+   - 使用4-bit量化降低基础模型显存占用
+   - 采用LoRA技术减少可训练参数
+   - 使用梯度累积处理大批量数据
 
-The training script uses the following default parameters:
-- Learning rate: 2e-4
-- Batch size: 2
-- Gradient accumulation steps: 4
-- Training epochs: 1
-- LoRA rank: 16
-- LoRA alpha: 32
+2. 训练效率：
+   - 使用FP16混合精度训练
+   - 采用checkpoint机制支持断点续训
+   - 优化数据加载和处理流程
 
-## Model Output
+## 注意事项
 
-The fine-tuned model will be saved in the `model_lora` directory with the following structure:
-- `adapter_config.json`: LoRA configuration
-- `adapter_model.bin`: LoRA weights
-- `training_args.bin`: Training arguments
+1. 显存要求：
+   - 建议使用至少16GB显存的GPU
+   - 可以通过调整batch_size和gradient_accumulation_steps来适应不同显存大小
 
-## Evaluation
+2. 数据格式：
+   - 确保训练数据格式正确
+   - 建议对数据进行预处理和清洗
 
-The evaluation script provides:
-- Model performance metrics
-- Prediction examples
-- Detailed evaluation report
+3. 模型保存：
+   - 模型权重保存在model_lora目录
+   - 支持断点续训，可以从checkpoint恢复训练
 
-## Notes
+## 许可证
 
-1. **Hardware Requirements**:
-   - GPU VRAM ≥ 8GB
-   - CUDA support
-   - SSD recommended
+本项目采用MIT许可证。详见LICENSE文件。
 
-2. **Training Tips**:
-   - Monitor GPU memory usage
-   - Adjust batch size if needed
-   - Use gradient checkpointing for large models
+## 贡献
 
-3. **Best Practices**:
-   - Regular model evaluation
-   - Save checkpoints
-   - Monitor training loss
-
-## Future Improvements
-
-1. Model Optimization:
-   - Support for larger models
-   - Advanced quantization methods
-   - Distributed training
-
-2. Training Enhancement:
-   - Curriculum learning
-   - Advanced data augmentation
-   - Multi-task learning
-
-3. Evaluation Metrics:
-   - More comprehensive metrics
-   - Automated evaluation pipeline
-   - Performance visualization
-
-## Contributing
-
-Issues and Pull Requests are welcome. Before submitting code, please ensure:
-1. Code follows PEP 8 standards
-2. Necessary comments and documentation are added
-3. Related test cases are updated
-4. All tests pass
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details. 
+欢迎提交Issue和Pull Request来帮助改进项目。 

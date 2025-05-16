@@ -32,7 +32,7 @@ RAG_ROOT = os.path.join(DRIVE_ROOT, "FinLLM-RAG")
 BASE_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"  
 LORA_PATH = os.path.join(INSTRUCTION_ROOT, "model_lora")
 TEST_DATA_PATH = os.path.join(INSTRUCTION_ROOT, "data", "validation_data.jsonl")
-RAG_CONTEXT_PATH = os.path.join(RAG_ROOT, "data", "phrasebank_all_agree.json")
+RAG_CONTEXT_PATH = os.path.join(RAG_ROOT, "data", "phrasebank_75_agree.json")
 OUTPUT_DIR = Path(RAG_ROOT) / "results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -90,8 +90,8 @@ class RAGContext:
         # Get query embedding
         query_embedding = self.embedding_model.encode([query])
         
-        # Step 1: Search in FAISS index for more candidates (e.g., top 3000)
-        faiss_k = 3000
+        # Step 1: Search in FAISS index for more candidates (e.g., top 900)
+        faiss_k = 900  # Modified to a more appropriate value since there are only 909 total entries
         distances, indices = self.index.search(query_embedding.astype('float32'), faiss_k)
         
         # Step 2: Calculate overlap coefficient and filter by threshold

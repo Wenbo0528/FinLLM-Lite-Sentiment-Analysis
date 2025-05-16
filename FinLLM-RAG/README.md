@@ -1,142 +1,135 @@
-# FinLLM-RAG: Financial News Sentiment Analysis RAG System
+# FinLLM-RAG
 
-This project implements a RAG (Retrieval-Augmented Generation) based financial news sentiment analysis system, providing more accurate sentiment analysis results by combining real-time financial news data with fine-tuned language models.
+A financial sentiment analysis enhancement module based on Retrieval-Augmented Generation (RAG). This module combines the fine-tuned FinLLM model with external knowledge bases to provide more accurate and reliable financial text sentiment analysis capabilities.
+
+## Project Features
+
+- Combines fine-tuned FinLLM model with RAG technology
+- Supports real-time retrieval of relevant financial knowledge
+- Provides more accurate sentiment analysis results
+- Extensible knowledge base support
+
+## Technical Architecture
+
+### Core Components
+1. Retrieval System
+   - Similarity search based on vector database
+   - Supports real-time knowledge base updates
+   - Configurable retrieval parameters
+
+2. Generation System
+   - Based on fine-tuned FinLLM model
+   - Supports context-enhanced generation
+   - Adjustable generation parameters
+
+### Workflow
+1. Input Processing: Receive user queries
+2. Knowledge Retrieval: Retrieve relevant documents from knowledge base
+3. Context Construction: Integrate retrieval results with user queries
+4. Enhanced Generation: Generate analysis results using FinLLM model
 
 ## Project Structure
 
 ```
 FinLLM-RAG/
-├── data_sources/              # Data Source Directory
-│   ├── get_rag_context_data.py    # Web Crawler Script
-│   └── rag_context_data.jsonl     # Crawled News Data
-├── inference/                 # Inference Module
-│   └── rag_retrieve_and_infer.py  # RAG Inference Script
-├── evaluation/               # Evaluation Module
-│   └── evaluate_rag_results.py    # RAG Results Evaluation Script
-├── results/                  # Results Directory
-│   ├── evaluation_report.json     # Evaluation Report
-│   ├── sentiment_comparison.png   # Sentiment Distribution Comparison Chart
-│   └── non_rag_predictions.json  # Non-RAG Prediction Results
-└── requirements.txt         # Project Dependencies
+├── data/                    # Data directory
+│   ├── Phrasebank_data_preprocess.py  # Data preprocessing script
+│   ├── get_rag_context_data.py       # Knowledge base data acquisition script
+│   ├── phrasebank_*.json             # Phrasebank data with different confidence levels
+│   ├── Sentences_*.txt               # Sentence data with different confidence levels
+│   └── api_rag_context_data_sample.jsonl  # API knowledge base data sample
+├── inference/              # Inference related code
+│   ├── rag_and_infer.py   # RAG inference main program
+│   └── analyze_rag_context.py  # Context analysis tool
+└── results/               # Results output directory
 ```
 
-## Environment Configuration
+## Usage
 
-Install project dependencies:
+### Environment Setup
+
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Main dependencies include:
-- transformers
-- peft
-- torch
-- beautifulsoup4
-- requests
-- fake-useragent
-- scikit-learn
-- matplotlib
-- seaborn
+2. Prepare knowledge base data:
+   The project provides two knowledge base data sources:
 
-## Data Acquisition
+   a. Offline Data (Recommended for Quick Start):
+   - Use preprocessed Phrasebank data (`data/phrasebank_*.json`)
+   - Includes datasets with different confidence levels (50%, 66%, 75%, 100%)
+   - No additional configuration needed, ready to use
 
-1. Run the web crawler script to get financial news data:
+   b. Online Data (Requires Internet Connection):
+   - Use `get_rag_context_data.py` script to crawl real-time financial news
+   - Supports multiple financial news sources
+   - Data will be saved in JSONL format
+
+### RAG Inference
+
+Use the provided scripts for RAG-enhanced inference:
+
 ```bash
-cd data_sources
-python get_rag_context_data.py
+# Linux/Mac
+./scripts/run_rag.sh --model_path "FinLLM-Instruction-tuning/model_lora" --query_file "FinLLM-RAG/data/queries.txt"
+
+# Windows
+scripts\run_rag.bat --model_path "FinLLM-Instruction-tuning\model_lora" --query_file "FinLLM-RAG\data\queries.txt"
 ```
 
-The crawler script will get data from the following sources:
-- Yahoo Finance
-- MarketWatch
-- Seeking Alpha
+### Parameter Description
 
-Data will be saved in the `data_sources/rag_context_data.jsonl` file.
+- `--model_path`: Path to the fine-tuned FinLLM model
+- `--query_file`: Path to the query file for analysis
+- `--output_dir`: Output results directory
+- `--top_k`: Number of documents to retrieve (default: 3)
 
-## Model Inference
+## Performance Optimization
 
-1. Ensure all dependencies are installed
-2. Ensure LoRA model is trained (located in `FinLLM-Instruction-tuning/model_lora`)
-3. Run RAG inference script:
-```bash
-cd inference
-python rag_retrieve_and_infer.py
-```
+1. Retrieval Optimization:
+   - Efficient vector retrieval algorithms
+   - Batch processing support
+   - Configurable caching mechanism
 
-Inference results will be saved in the `inference/rag_inference_results.json` file.
-
-## Results Evaluation
-
-Run evaluation script to analyze RAG and non-RAG results:
-```bash
-cd evaluation
-python evaluate_rag_results.py
-```
-
-Evaluation results will be saved in the `results` directory, including:
-- `evaluation_report.json`: Detailed evaluation report
-- `sentiment_comparison.png`: Sentiment distribution comparison chart between RAG and non-RAG
-- `non_rag_predictions.json`: Prediction results without using RAG
-
-## System Features
-
-1. Real-time data acquisition:
-   - Automatically crawl latest financial news
-   - Support multiple data sources
-   - Include anti-crawling measures
-
-2. Intelligent retrieval:
-   - Context retrieval based on similarity
-   - Support multi-source data fusion
-   - Preserve source information
-
-3. Comparison evaluation:
-   - RAG vs non-RAG performance comparison
-   - Detailed evaluation metrics
-   - Visual analysis results
+2. Generation Optimization:
+   - Context length optimization
+   - Parallel processing support
+   - Memory usage optimization
 
 ## Notes
 
-1. Hardware requirements:
-   - GPU memory: Recommended at least 8GB
-   - Support FP16 training and inference
+1. Knowledge Base Requirements:
+   - Ensure knowledge base data quality
+   - Regular knowledge base updates
+   - Pay attention to knowledge base timeliness
 
-2. Network requirements:
-   - Stable network connection required
-   - Proxy configuration may be needed
+2. System Requirements:
+   - SSD storage recommended for knowledge base
+   - Sufficient memory for vector retrieval
+   - GPU acceleration recommended
 
-3. Data requirements:
-   - Ensure data source is accessible
-   - Regularly update news data
+3. Usage Recommendations:
+   - Adjust retrieval parameters based on needs
+   - Regular knowledge base evaluation and updates
+   - Monitor system performance metrics
 
-## Usage Example
+## Evaluation Metrics
 
-1. Get news data:
-```python
-from data_sources.get_rag_context_data import scrape_financial_news
-news_data = scrape_financial_news()
-```
+1. Retrieval Quality:
+   - Retrieval accuracy
+   - Retrieval recall
+   - Retrieval latency
 
-2. Run RAG inference:
-```python
-from inference.rag_retrieve_and_infer import run_inference
-result = run_inference("Tesla stock rose 5% after strong earnings")
-```
-
-3. Evaluate results:
-```python
-from evaluation.evaluate_rag_results import RAGEvaluator
-evaluator = RAGEvaluator("inference/rag_inference_results.json")
-evaluator.generate_report()
-```
-
-## Contribution Guidelines
-
-Welcome to submit issues and Pull Requests to improve the project. Before submitting code, please ensure:
-1. Code conforms to PEP 8 standards
-2. Add necessary comments and documentation
-3. Update related test cases
+2. Generation Quality:
+   - Sentiment analysis accuracy
+   - Generation result relevance
+   - Response time
 
 ## License
 
-This project uses the MIT License. See [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License. See LICENSE file for details.
+
+## Contributing
+
+Issues and Pull Requests are welcome to help improve the project. 

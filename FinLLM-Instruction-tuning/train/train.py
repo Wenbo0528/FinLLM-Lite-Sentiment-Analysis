@@ -51,13 +51,13 @@ training_args = TrainingArguments(
     remove_unused_columns=False,
     save_total_limit=10,
     report_to="none",
-    # checkpoint相关
+    # Checkpoint related
     save_safetensors=True,
     save_only_model=True,
-    overwrite_output_dir=False,  # 不覆盖输出目录，这样可以保存checkpoint
-    load_best_model_at_end=False,  # 不加载最佳模型
-    metric_for_best_model=None,    # 不使用指标选择最佳模型
-    greater_is_better=None,        # 不使用指标比较
+    overwrite_output_dir=False,  # Don't overwrite output directory to save checkpoints
+    load_best_model_at_end=False,  # Don't load best model
+    metric_for_best_model=None,    # Don't use metrics to select best model
+    greater_is_better=None,        # Don't use metrics comparison
 )
 
 # ==== Model Configuration ====
@@ -199,13 +199,13 @@ def main():
         )
     )
 
-    # 检查是否存在检查点
+    # Check if checkpoint exists
     last_checkpoint = None
     if os.path.isdir(OUTPUT_DIR):
         last_checkpoint = get_last_checkpoint(OUTPUT_DIR)
         if last_checkpoint is not None:
             logger.info(f"Found checkpoint: {last_checkpoint}")
-            # 尝试从检查点恢复训练
+            # Try to resume training from checkpoint
             try:
                 trainer.train(resume_from_checkpoint=last_checkpoint)
                 logger.info("Successfully resumed training from checkpoint")
