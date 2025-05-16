@@ -1,33 +1,33 @@
-# FinLLM-RAG: 金融新闻情感分析 RAG 系统
+# FinLLM-RAG: Financial News Sentiment Analysis RAG System
 
-这个项目实现了一个基于 RAG (Retrieval-Augmented Generation) 的金融新闻情感分析系统，通过结合实时金融新闻数据和微调的语言模型，提供更准确的情感分析结果。
+This project implements a RAG (Retrieval-Augmented Generation) based financial news sentiment analysis system, providing more accurate sentiment analysis results by combining real-time financial news data with fine-tuned language models.
 
-## 项目结构
+## Project Structure
 
 ```
 FinLLM-RAG/
-├── data_sources/              # 数据源目录
-│   ├── get_rag_context_data.py    # 网页爬虫脚本
-│   └── rag_context_data.jsonl     # 爬取的新闻数据
-├── inference/                 # 推理模块
-│   └── rag_retrieve_and_infer.py  # RAG 推理脚本
-├── evaluation/               # 评估模块
-│   └── evaluate_rag_results.py    # RAG 结果评估脚本
-├── results/                  # 结果目录
-│   ├── evaluation_report.json     # 评估报告
-│   ├── sentiment_comparison.png   # 情感分布对比图
-│   └── non_rag_predictions.json  # 非 RAG 预测结果
-└── requirements.txt         # 项目依赖
+├── data_sources/              # Data Source Directory
+│   ├── get_rag_context_data.py    # Web Crawler Script
+│   └── rag_context_data.jsonl     # Crawled News Data
+├── inference/                 # Inference Module
+│   └── rag_retrieve_and_infer.py  # RAG Inference Script
+├── evaluation/               # Evaluation Module
+│   └── evaluate_rag_results.py    # RAG Results Evaluation Script
+├── results/                  # Results Directory
+│   ├── evaluation_report.json     # Evaluation Report
+│   ├── sentiment_comparison.png   # Sentiment Distribution Comparison Chart
+│   └── non_rag_predictions.json  # Non-RAG Prediction Results
+└── requirements.txt         # Project Dependencies
 ```
 
-## 环境配置
+## Environment Configuration
 
-安装项目依赖：
+Install project dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-主要依赖包括：
+Main dependencies include:
 - transformers
 - peft
 - torch
@@ -38,105 +38,105 @@ pip install -r requirements.txt
 - matplotlib
 - seaborn
 
-## 数据获取
+## Data Acquisition
 
-1. 运行网页爬虫脚本获取金融新闻数据：
+1. Run the web crawler script to get financial news data:
 ```bash
 cd data_sources
 python get_rag_context_data.py
 ```
 
-爬虫脚本会从以下来源获取数据：
+The crawler script will get data from the following sources:
 - Yahoo Finance
 - MarketWatch
 - Seeking Alpha
 
-数据将保存在 `data_sources/rag_context_data.jsonl` 文件中。
+Data will be saved in the `data_sources/rag_context_data.jsonl` file.
 
-## 模型推理
+## Model Inference
 
-1. 确保已安装所有依赖
-2. 确保 LoRA 模型已训练完成（位于 `FinLLM-Instruction-tuning/model_lora`）
-3. 运行 RAG 推理脚本：
+1. Ensure all dependencies are installed
+2. Ensure LoRA model is trained (located in `FinLLM-Instruction-tuning/model_lora`)
+3. Run RAG inference script:
 ```bash
 cd inference
 python rag_retrieve_and_infer.py
 ```
 
-推理结果将保存在 `inference/rag_inference_results.json` 文件中。
+Inference results will be saved in the `inference/rag_inference_results.json` file.
 
-## 结果评估
+## Results Evaluation
 
-运行评估脚本分析 RAG 和非 RAG 的结果：
+Run evaluation script to analyze RAG and non-RAG results:
 ```bash
 cd evaluation
 python evaluate_rag_results.py
 ```
 
-评估结果将保存在 `results` 目录下，包括：
-- `evaluation_report.json`: 详细的评估报告
-- `sentiment_comparison.png`: RAG 和非 RAG 的情感分布对比图
-- `non_rag_predictions.json`: 不使用 RAG 的预测结果
+Evaluation results will be saved in the `results` directory, including:
+- `evaluation_report.json`: Detailed evaluation report
+- `sentiment_comparison.png`: Sentiment distribution comparison chart between RAG and non-RAG
+- `non_rag_predictions.json`: Prediction results without using RAG
 
-## 系统特点
+## System Features
 
-1. 实时数据获取：
-   - 自动爬取最新金融新闻
-   - 支持多个数据源
-   - 包含反爬虫措施
+1. Real-time data acquisition:
+   - Automatically crawl latest financial news
+   - Support multiple data sources
+   - Include anti-crawling measures
 
-2. 智能检索：
-   - 基于相似度的上下文检索
-   - 支持多源数据融合
-   - 保留来源信息
+2. Intelligent retrieval:
+   - Context retrieval based on similarity
+   - Support multi-source data fusion
+   - Preserve source information
 
-3. 对比评估：
-   - RAG vs 非 RAG 性能对比
-   - 详细的评估指标
-   - 可视化分析结果
+3. Comparison evaluation:
+   - RAG vs non-RAG performance comparison
+   - Detailed evaluation metrics
+   - Visual analysis results
 
-## 注意事项
+## Notes
 
-1. 硬件要求：
-   - GPU 显存：建议至少 8GB
-   - 支持 FP16 训练和推理
+1. Hardware requirements:
+   - GPU memory: Recommended at least 8GB
+   - Support FP16 training and inference
 
-2. 网络要求：
-   - 需要稳定的网络连接
-   - 可能需要配置代理
+2. Network requirements:
+   - Stable network connection required
+   - Proxy configuration may be needed
 
-3. 数据要求：
-   - 确保数据源可访问
-   - 定期更新新闻数据
+3. Data requirements:
+   - Ensure data source is accessible
+   - Regularly update news data
 
-## 使用示例
+## Usage Example
 
-1. 获取新闻数据：
+1. Get news data:
 ```python
 from data_sources.get_rag_context_data import scrape_financial_news
 news_data = scrape_financial_news()
 ```
 
-2. 运行 RAG 推理：
+2. Run RAG inference:
 ```python
 from inference.rag_retrieve_and_infer import run_inference
 result = run_inference("Tesla stock rose 5% after strong earnings")
 ```
 
-3. 评估结果：
+3. Evaluate results:
 ```python
 from evaluation.evaluate_rag_results import RAGEvaluator
 evaluator = RAGEvaluator("inference/rag_inference_results.json")
 evaluator.generate_report()
 ```
 
-## 贡献指南
+## Contribution Guidelines
 
-欢迎提交 Issue 和 Pull Request 来改进项目。在提交代码前，请确保：
-1. 代码符合 PEP 8 规范
-2. 添加必要的注释和文档
-3. 更新相关的测试用例
+Welcome to submit issues and Pull Requests to improve the project. Before submitting code, please ensure:
+1. Code conforms to PEP 8 standards
+2. Add necessary comments and documentation
+3. Update related test cases
 
-## 许可证
+## License
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。 
+This project uses the MIT License. See [LICENSE](LICENSE) file for details. 

@@ -45,20 +45,19 @@ training_args = TrainingArguments(
     learning_rate=1e-4,
     weight_decay=0.01,
     warmup_steps=10000,
-    save_steps=5000,
+    save_steps=1000,
     fp16=True,
     torch_compile=False,
-    load_best_model_at_end=True,
-    evaluation_strategy="steps",
     remove_unused_columns=False,
-    save_total_limit=3,
-    metric_for_best_model="loss",
-    greater_is_better=False,
+    save_total_limit=10,
     report_to="none",
     # checkpoint相关
     save_safetensors=True,
     save_only_model=True,
-    overwrite_output_dir=False,
+    overwrite_output_dir=False,  # 不覆盖输出目录，这样可以保存checkpoint
+    load_best_model_at_end=False,  # 不加载最佳模型
+    metric_for_best_model=None,    # 不使用指标选择最佳模型
+    greater_is_better=None,        # 不使用指标比较
 )
 
 # ==== Model Configuration ====
@@ -78,8 +77,7 @@ lora_config = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM",
     # QLoRA key parameters
-    dtype=torch.float16,  # LoRA layers use float16 to save memory
-    use_rslora=False,     # Disable RSLora (enable for extreme memory saving)
+    use_rslora=False     # Disable RSLora (enable for extreme memory saving)
 )
 
 # ==== Quantization Configuration ====
@@ -173,7 +171,6 @@ def main():
         lora_dropout=0.05,
         bias="none",
         task_type="CAUSAL_LM",
-        dtype=torch.float16,
         use_rslora=False,
     )
 
@@ -202,17 +199,26 @@ def main():
         )
     )
 
-    # Check for existing checkpoint
+    # 检查是否存在检查点
     last_checkpoint = None
     if os.path.isdir(OUTPUT_DIR):
         last_checkpoint = get_last_checkpoint(OUTPUT_DIR)
         if last_checkpoint is not None:
             logger.info(f"Found checkpoint: {last_checkpoint}")
+            # 尝试从检查点恢复训练
+            try:
+                trainer.train(resume_from_checkpoint=last_checkpoint)
+                logger.info("Successfully resumed training from checkpoint")
+            except Exception as e:
+                logger.error(f"Failed to resume from checkpoint: {e}")
+                logger.info("Starting training from scratch")
+                trainer.train()
         else:
             logger.info("No checkpoint found, starting training from scratch")
-
-    # Start training, automatically resume if checkpoint exists
-    trainer.train(resume_from_checkpoint=last_checkpoint)
+            trainer.train()
+    else:
+        logger.info("Output directory does not exist, starting training from scratch")
+        trainer.train()
 
     # Save final model
     trainer.save_model()
