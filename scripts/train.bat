@@ -1,13 +1,13 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: 设置默认参数
+:: Set default parameters
 set MODEL_NAME=default_model
 set BATCH_SIZE=8
 set LEARNING_RATE=2e-5
 set EPOCHS=3
 
-:: 解析命令行参数
+:: Parse command line arguments
 :parse_args
 if "%~1"=="" goto :end_parse_args
 if "%~1"=="--model_name" (
@@ -38,23 +38,23 @@ echo Unknown parameter: %~1
 exit /b 1
 :end_parse_args
 
-:: 检查Python环境
+:: Check Python environment
 where python >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo Error: Python is not installed
     exit /b 1
 )
 
-:: 检查必要的目录
+:: Check required directories
 if not exist "FinLLM-Instruction-tuning\train" (
     echo Error: Training directory not found
     exit /b 1
 )
 
-:: 创建日志目录
+:: Create log directory
 if not exist "logs" mkdir logs
 
-:: 开始训练
+:: Start training
 echo [%date% %time%] Starting training process...
 echo [%date% %time%] Model: %MODEL_NAME%
 echo [%date% %time%] Batch size: %BATCH_SIZE%

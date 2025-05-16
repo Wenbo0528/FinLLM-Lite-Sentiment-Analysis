@@ -8,6 +8,7 @@ A financial sentiment analysis instruction tuning project based on the DeepSeek-
 - Instruction-tuning approach to improve model understanding of financial text
 - Optimized for financial sentiment analysis tasks
 - Supports model quantization for practical deployment
+- Provides complete training and inference scripts
 
 ## Technical Details
 
@@ -21,10 +22,10 @@ A financial sentiment analysis instruction tuning project based on the DeepSeek-
   - dropout = 0.05
 
 ### Training Configuration
-- Training Epochs: 2
-- Batch Size: 4 (per device)
+- Training Epochs: 3 (default)
+- Batch Size: 8 (default)
 - Gradient Accumulation Steps: 8
-- Learning Rate: 1e-4
+- Learning Rate: 2e-5 (default)
 - Weight Decay: 0.01
 - Warmup Steps: 10000
 - Save Steps: 1000
@@ -35,15 +36,15 @@ A financial sentiment analysis instruction tuning project based on the DeepSeek-
 ```
 FinLLM-Instruction-tuning/
 ├── data/                    # Training data directory
-│   └── instruction_formatted_data.jsonl  # Instruction-formatted training data
+│   ├── data_preparation.py  # Data preparation script
+│   ├── instruction_formatted_data.jsonl  # Training data
+│   └── validation_data.jsonl  # Validation data
 ├── train/                   # Training related code
 │   └── train.py            # Training script
 ├── model_lora/             # Saved LoRA model weights
 ├── results/                # Training results and evaluation metrics
-├── Inference/             # Inference related code
-│   ├── inference.py       # Inference script for fine-tuned model
-│   └── inference_origin.py # Inference script for original model
-└── backup_py/             # Backup code
+└── Inference/             # Inference related code
+    └── inference.py       # Inference script
 ```
 
 ## Usage
@@ -55,9 +56,18 @@ FinLLM-Instruction-tuning/
 pip install -r requirements.txt
 ```
 
-2. Prepare training data:
-- Place training data in `data/instruction_formatted_data.jsonl`
-- Data should be in JSONL format, with each line containing instruction and output fields
+2. Configure paths in Python files:
+```python
+# For local environment (uncomment to use):
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# TRAIN_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
+# TEST_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "validation_data.jsonl")
+
+# For Google Colab (default):
+DRIVE_ROOT = "/content/drive/FinLLM-Sentiment-Analysis/FinLLM-Instruction-tuning"
+TRAIN_OUTPUT_PATH = os.path.join(DRIVE_ROOT, "data", "instruction_formatted_data.jsonl")
+TEST_OUTPUT_PATH = os.path.join(DRIVE_ROOT, "data", "validation_data.jsonl")
+```
 
 ### Model Training
 
@@ -69,6 +79,12 @@ Use the provided training script to train the model:
 
 # Windows
 scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
+
+# Default parameters if not specified:
+# --model_name: default_model
+# --batch_size: 8
+# --learning_rate: 2e-5
+# --epochs: 3
 ```
 
 ### Model Inference
@@ -77,11 +93,13 @@ After training, use the trained model for inference:
 
 ```bash
 # Linux/Mac
-./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt"
+./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "FinLLM-Instruction-tuning/data/validation_data.jsonl"
 
 # Windows
-scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt"
+scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "FinLLM-Instruction-tuning\data\validation_data.jsonl"
 ```
+
+Note: The inference process automatically generates evaluation results along with the predictions. No separate evaluation step is required.
 
 ## Performance Optimization
 
@@ -98,16 +116,22 @@ scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --inpu
 ## Important Notes
 
 1. Memory Requirements:
-   - Recommended GPU with at least 16GB memory
+   - Recommended GPU with at least 8GB memory
    - Adjust batch_size and gradient_accumulation_steps to accommodate different memory sizes
 
 2. Data Format:
-   - Ensure correct training data format
-   - Recommended to preprocess and clean the data
+   - Training data: `instruction_formatted_data.jsonl`
+   - Validation data: `validation_data.jsonl`
+   - Both files should be in JSONL format
 
 3. Model Saving:
    - Model weights are saved in the model_lora directory
    - Supports training resumption from checkpoints
+
+4. Path Configuration:
+   - Modify paths in Python files according to your environment
+   - Update script paths if needed
+   - Ensure all required directories exist
 
 ## License
 
@@ -115,4 +139,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Contributing
 
-Issues and Pull Requests are welcome to help improve the project. 
+Issues and Pull Requests are welcome to help improve the project. Before submitting code, please ensure:
+1. Code follows the project's coding standards
+2. Necessary comments and documentation are added
+3. Related test cases are updated 

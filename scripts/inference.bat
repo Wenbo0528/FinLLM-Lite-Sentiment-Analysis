@@ -1,12 +1,12 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: 设置默认参数
+:: Set default parameters
 set MODEL_PATH=FinLLM-Instruction-tuning\model_lora
-set INPUT_FILE=FinLLM-Instruction-tuning\data\test_queries.txt
+set INPUT_FILE=FinLLM-Instruction-tuning\data\validation_data.jsonl
 set OUTPUT_DIR=FinLLM-Instruction-tuning\results
 
-:: 解析命令行参数
+:: Parse command line arguments
 :parse_args
 if "%~1"=="" goto :end_parse_args
 if "%~1"=="--model_path" (
@@ -31,24 +31,24 @@ echo Unknown parameter: %~1
 exit /b 1
 :end_parse_args
 
-:: 检查Python环境
+:: Check Python environment
 where python >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo Error: Python is not installed
     exit /b 1
 )
 
-:: 检查必要的目录
+:: Check required directories
 if not exist "FinLLM-Instruction-tuning\Inference" (
     echo Error: Inference directory not found
     exit /b 1
 )
 
-:: 创建输出目录
+:: Create output directory
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 if not exist "logs" mkdir logs
 
-:: 开始推理
+:: Start inference
 echo [%date% %time%] Starting inference process...
 echo [%date% %time%] Model path: %MODEL_PATH%
 echo [%date% %time%] Input file: %INPUT_FILE%

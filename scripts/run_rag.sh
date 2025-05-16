@@ -1,32 +1,33 @@
 #!/bin/bash
 
-# 设置错误处理
+# Set error handling
 set -e
 
-# 定义日志函数
+# Define logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# 检查Python环境
+# Check Python environment
 if ! command -v python &> /dev/null; then
     log "Error: Python is not installed"
     exit 1
 fi
 
-# 检查必要的目录和文件
+# Check required directories and files
 if [ ! -d "FinLLM-RAG/inference" ]; then
     log "Error: RAG inference directory not found"
     exit 1
 fi
 
-# 设置默认参数
+# Set default parameters
 MODEL_PATH="FinLLM-Instruction-tuning/model_lora"
-QUERY_FILE="FinLLM-RAG/data/queries.txt"
+QUERY_FILE="FinLLM-Instruction-tuning/data/validation_data.jsonl"
+KNOWLEDGE_BASE="FinLLM-RAG/data/phrasebank_75_agree.json"
 OUTPUT_DIR="FinLLM-RAG/results"
 TOP_K=3
 
-# 解析命令行参数
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --model_path)
@@ -35,6 +36,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --query_file)
             QUERY_FILE="$2"
+            shift 2
+            ;;
+        --knowledge_base)
+            KNOWLEDGE_BASE="$2"
             shift 2
             ;;
         --output_dir)
@@ -52,20 +57,22 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 创建输出目录
+# Create output directory
 mkdir -p "$OUTPUT_DIR"
 mkdir -p logs
 
-# 开始RAG推理
+# Start RAG inference
 log "Starting RAG inference..."
 log "Model path: $MODEL_PATH"
 log "Query file: $QUERY_FILE"
+log "Knowledge base: $KNOWLEDGE_BASE"
 log "Output directory: $OUTPUT_DIR"
 log "Top-K: $TOP_K"
 
 python FinLLM-RAG/inference/rag_retrieve_and_infer.py \
     --model_path "$MODEL_PATH" \
     --query_file "$QUERY_FILE" \
+    --knowledge_base "$KNOWLEDGE_BASE" \
     --output_dir "$OUTPUT_DIR" \
     --top_k "$TOP_K" \
     2>&1 | tee "logs/rag_$(date +'%Y%m%d_%H%M%S').log"

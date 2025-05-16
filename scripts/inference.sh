@@ -1,31 +1,31 @@
 #!/bin/bash
 
-# 设置错误处理
+# Set error handling
 set -e
 
-# 定义日志函数
+# Define logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# 检查Python环境
+# Check Python environment
 if ! command -v python &> /dev/null; then
     log "Error: Python is not installed"
     exit 1
 fi
 
-# 检查必要的目录和文件
+# Check required directories and files
 if [ ! -d "FinLLM-Instruction-tuning/Inference" ]; then
     log "Error: Inference directory not found"
     exit 1
 fi
 
-# 设置默认参数
+# Set default parameters
 MODEL_PATH="FinLLM-Instruction-tuning/model_lora"
-INPUT_FILE="FinLLM-Instruction-tuning/data/test_queries.txt"
+INPUT_FILE="FinLLM-Instruction-tuning/data/validation_data.jsonl"
 OUTPUT_DIR="FinLLM-Instruction-tuning/results"
 
-# 解析命令行参数
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --model_path)
@@ -47,11 +47,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 创建输出目录
+# Create output directory
 mkdir -p "$OUTPUT_DIR"
 mkdir -p logs
 
-# 开始推理
+# Start inference
 log "Starting inference process..."
 log "Model path: $MODEL_PATH"
 log "Input file: $INPUT_FILE"

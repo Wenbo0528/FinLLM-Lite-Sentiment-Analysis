@@ -1,32 +1,32 @@
 #!/bin/bash
 
-# 设置错误处理
+# Set error handling
 set -e
 
-# 定义日志函数
+# Define logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# 检查Python环境
+# Check Python environment
 if ! command -v python &> /dev/null; then
     log "Error: Python is not installed"
     exit 1
 fi
 
-# 检查必要的目录和文件
+# Check required directories and files
 if [ ! -d "FinLLM-Instruction-tuning/train" ]; then
     log "Error: Training directory not found"
     exit 1
 fi
 
-# 设置默认参数
+# Set default parameters
 MODEL_NAME="default_model"
 BATCH_SIZE=8
 LEARNING_RATE=2e-5
 EPOCHS=3
 
-# 解析命令行参数
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --model_name)
@@ -52,10 +52,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 创建日志目录
+# Create log directory
 mkdir -p logs
 
-# 开始训练
+# Start training
 log "Starting training process..."
 log "Model: $MODEL_NAME"
 log "Batch size: $BATCH_SIZE"

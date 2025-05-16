@@ -21,9 +21,7 @@ FinLLM-Sentiment-Analysis/
     ├── inference.sh    # Inference script
     ├── inference.bat   # Windows inference script
     ├── run_rag.sh      # RAG inference script
-    ├── run_rag.bat     # Windows RAG inference script
-    ├── evaluate.sh     # Evaluation script
-    └── evaluate.bat    # Windows evaluation script
+    └── run_rag.bat     # Windows RAG inference script
 ```
 
 ## Module Description
@@ -81,6 +79,10 @@ Note: The scripts in the `scripts/` directory use relative paths, but the Python
 
 ## Quick Start
 
+Important Note: All scripts in this project are for reference only. To use them:
+1. First modify the paths in the Python files according to your environment (local or Google Colab)
+2. Then adjust the corresponding scripts accordingly
+
 1. Environment Setup:
 ```bash
 # Create and activate virtual environment
@@ -116,29 +118,37 @@ scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --
 ```bash
 # Using original model inference
 # Linux/Mac
-./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt"
+./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "FinLLM-Instruction-tuning/data/validation_data.jsonl"
 
 # Windows
-scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt"
+scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "FinLLM-Instruction-tuning\data\validation_data.jsonl"
 
 # Using RAG-enhanced inference
 # Linux/Mac
-./scripts/run_rag.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt" --knowledge_base "FinLLM-RAG/data/phrasebank"
+./scripts/run_rag.sh --model_path "FinLLM-Instruction-tuning/model_lora" --query_file "FinLLM-Instruction-tuning/data/validation_data.jsonl" --knowledge_base "FinLLM-RAG/data/phrasebank_75_agree.json"
 
 # Windows
-scripts\run_rag.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt" --knowledge_base "FinLLM-RAG\data\phrasebank"
+scripts\run_rag.bat --model_path "FinLLM-Instruction-tuning\model_lora" --query_file "FinLLM-Instruction-tuning\data\validation_data.jsonl" --knowledge_base "FinLLM-RAG\data\phrasebank_75_agree.json"
 ```
 
-4. Result Evaluation:
-```bash
-# Linux/Mac
-./scripts/evaluate.sh --model_path "FinLLM-Instruction-tuning/model_lora" --test_file "data/test_data.jsonl"
+Note: The inference process automatically generates evaluation results along with the predictions. No separate evaluation step is required.
 
-# Windows
-scripts\evaluate.bat --model_path "FinLLM-Instruction-tuning\model_lora" --test_file "data\test_data.jsonl"
-```
+Important: The file paths in the examples above are placeholders. You need to replace them with your actual file paths:
+- `FinLLM-Instruction-tuning/data/validation_data.jsonl`: Replace with your validation data file path
+- `FinLLM-Instruction-tuning/model_lora`: Replace with your trained model path
+- `FinLLM-RAG/data/phrasebank_75_agree.json`: Replace with your knowledge base path (for RAG inference)
 
-Note: All scripts support command-line parameters and will create logs in the `logs` directory. Make sure you have the correct permissions to execute the scripts and create log files.
+Note for RAG Knowledge Base:
+- By default, the system uses offline Phrasebank data (`phrasebank_75_agree.json`) as the knowledge base
+- You can also use online data by setting `--knowledge_base "online"`, which will use `FinLLM-RAG/data/get_rag_context_data.py` to fetch real-time financial data
+- Example for online data:
+  ```bash
+  # Linux/Mac
+  ./scripts/run_rag.sh --model_path "FinLLM-Instruction-tuning/model_lora" --query_file "FinLLM-Instruction-tuning/data/validation_data.jsonl" --knowledge_base "online"
+  
+  # Windows
+  scripts\run_rag.bat --model_path "FinLLM-Instruction-tuning\model_lora" --query_file "FinLLM-Instruction-tuning\data\validation_data.jsonl" --knowledge_base "online"
+  ```
 
 ## System Requirements
 
