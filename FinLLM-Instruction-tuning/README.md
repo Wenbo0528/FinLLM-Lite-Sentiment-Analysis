@@ -1,67 +1,67 @@
 # FinLLM-Instruction-tuning
 
-基于DeepSeek-R1-Distill-Qwen-1.5B模型的金融情绪分析指令微调项目。本项目使用QLoRA（4-bit量化+LoRA）技术对模型进行高效微调，使其能够更好地理解和分析金融文本中的情绪倾向。
+A financial sentiment analysis instruction tuning project based on the DeepSeek-R1-Distill-Qwen-1.5B model. This project uses QLoRA (4-bit quantization + LoRA) technology for efficient fine-tuning, enabling the model to better understand and analyze sentiment tendencies in financial text.
 
-## 项目特点
+## Project Features
 
-- 使用QLoRA技术进行高效微调，显著降低显存需求
-- 采用Instruction-tuning方法，提高模型对金融文本的理解能力
-- 针对金融领域情绪分析任务进行优化
-- 支持模型量化部署，便于实际应用
+- Efficient fine-tuning using QLoRA technology, significantly reducing GPU memory requirements
+- Instruction-tuning approach to improve model understanding of financial text
+- Optimized for financial sentiment analysis tasks
+- Supports model quantization for practical deployment
 
-## 技术细节
+## Technical Details
 
-### 模型架构
-- 基础模型：DeepSeek-R1-Distill-Qwen-1.5B
-- 微调方法：QLoRA (4-bit量化 + LoRA)
-- LoRA配置：
+### Model Architecture
+- Base Model: DeepSeek-R1-Distill-Qwen-1.5B
+- Fine-tuning Method: QLoRA (4-bit quantization + LoRA)
+- LoRA Configuration:
   - rank (r) = 4
   - alpha = 8
-  - 目标模块：["q_proj", "k_proj", "v_proj", "o_proj"]
+  - Target Modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
   - dropout = 0.05
 
-### 训练配置
-- 训练轮数：2 epochs
-- 批次大小：4 (per device)
-- 梯度累积步数：8
-- 学习率：1e-4
-- 权重衰减：0.01
-- 预热步数：10000
-- 保存步数：1000
-- 使用FP16训练
+### Training Configuration
+- Training Epochs: 2
+- Batch Size: 4 (per device)
+- Gradient Accumulation Steps: 8
+- Learning Rate: 1e-4
+- Weight Decay: 0.01
+- Warmup Steps: 10000
+- Save Steps: 1000
+- Training with FP16
 
-## 项目结构
+## Project Structure
 
 ```
 FinLLM-Instruction-tuning/
-├── data/                    # 训练数据目录
-│   └── instruction_formatted_data.jsonl  # 指令格式的训练数据
-├── train/                   # 训练相关代码
-│   └── train.py            # 训练脚本
-├── model_lora/             # 保存的LoRA模型权重
-├── results/                # 训练结果和评估指标
-├── Inference/             # 推理相关代码
-│   ├── inference.py       # 微调后模型的推理脚本
-│   └── inference_origin.py # 原始模型的推理脚本
-└── backup_py/             # 备份代码
+├── data/                    # Training data directory
+│   └── instruction_formatted_data.jsonl  # Instruction-formatted training data
+├── train/                   # Training related code
+│   └── train.py            # Training script
+├── model_lora/             # Saved LoRA model weights
+├── results/                # Training results and evaluation metrics
+├── Inference/             # Inference related code
+│   ├── inference.py       # Inference script for fine-tuned model
+│   └── inference_origin.py # Inference script for original model
+└── backup_py/             # Backup code
 ```
 
-## 使用方法
+## Usage
 
-### 环境配置
+### Environment Setup
 
-1. 安装依赖：
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. 准备训练数据：
-- 将训练数据放在 `data/instruction_formatted_data.jsonl` 中
-- 数据格式应为JSONL，每行包含instruction和output字段
+2. Prepare training data:
+- Place training data in `data/instruction_formatted_data.jsonl`
+- Data should be in JSONL format, with each line containing instruction and output fields
 
-### 训练模型
+### Model Training
 
-使用提供的训练脚本进行模型训练：
+Use the provided training script to train the model:
 
 ```bash
 # Linux/Mac
@@ -71,9 +71,9 @@ pip install -r requirements.txt
 scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
 ```
 
-### 模型推理
+### Model Inference
 
-训练完成后，可以使用训练好的模型进行推理：
+After training, use the trained model for inference:
 
 ```bash
 # Linux/Mac
@@ -83,36 +83,36 @@ scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --
 scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt"
 ```
 
-## 性能优化
+## Performance Optimization
 
-1. 显存优化：
-   - 使用4-bit量化降低基础模型显存占用
-   - 采用LoRA技术减少可训练参数
-   - 使用梯度累积处理大批量数据
+1. Memory Optimization:
+   - 4-bit quantization to reduce base model memory usage
+   - LoRA technology to minimize trainable parameters
+   - Gradient accumulation for handling large batch sizes
 
-2. 训练效率：
-   - 使用FP16混合精度训练
-   - 采用checkpoint机制支持断点续训
-   - 优化数据加载和处理流程
+2. Training Efficiency:
+   - FP16 mixed precision training
+   - Checkpoint mechanism for resuming training
+   - Optimized data loading and processing pipeline
 
-## 注意事项
+## Important Notes
 
-1. 显存要求：
-   - 建议使用至少16GB显存的GPU
-   - 可以通过调整batch_size和gradient_accumulation_steps来适应不同显存大小
+1. Memory Requirements:
+   - Recommended GPU with at least 16GB memory
+   - Adjust batch_size and gradient_accumulation_steps to accommodate different memory sizes
 
-2. 数据格式：
-   - 确保训练数据格式正确
-   - 建议对数据进行预处理和清洗
+2. Data Format:
+   - Ensure correct training data format
+   - Recommended to preprocess and clean the data
 
-3. 模型保存：
-   - 模型权重保存在model_lora目录
-   - 支持断点续训，可以从checkpoint恢复训练
+3. Model Saving:
+   - Model weights are saved in the model_lora directory
+   - Supports training resumption from checkpoints
 
-## 许可证
+## License
 
-本项目采用MIT许可证。详见LICENSE文件。
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-## 贡献
+## Contributing
 
-欢迎提交Issue和Pull Request来帮助改进项目。 
+Issues and Pull Requests are welcome to help improve the project. 

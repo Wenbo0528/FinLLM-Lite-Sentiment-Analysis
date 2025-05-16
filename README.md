@@ -1,133 +1,173 @@
 # FinLLM-Sentiment-Analysis
 
-基于大语言模型的金融文本情绪分析系统，结合了指令微调（Instruction-tuning）和检索增强生成（RAG）技术，提供更准确、更可靠的金融文本情绪分析能力。
+A financial text sentiment analysis system based on large language models, combining instruction tuning and Retrieval-Augmented Generation (RAG) technologies to provide more accurate and reliable financial text sentiment analysis capabilities.
 
-## 项目结构
+## Project Structure
 
 ```
 FinLLM-Sentiment-Analysis/
-├── FinLLM-Instruction-tuning/  # 指令微调模块
-│   ├── data/                  # 训练数据
-│   ├── train/                # 训练相关代码
-│   ├── Inference/           # 推理相关代码
-│   └── model_lora/          # 微调后的模型
-├── FinLLM-RAG/              # RAG增强模块
-│   ├── data/               # 知识库数据
-│   ├── inference/         # RAG推理代码
-│   └── results/          # 结果输出
-└── scripts/              # 通用脚本
-    ├── train.sh         # 训练脚本
-    ├── train.bat       # Windows训练脚本
-    ├── inference.sh    # 推理脚本
-    ├── inference.bat   # Windows推理脚本
-    ├── run_rag.sh      # RAG推理脚本
-    ├── run_rag.bat     # Windows RAG推理脚本
-    ├── evaluate.sh     # 评估脚本
-    └── evaluate.bat    # Windows评估脚本
+├── FinLLM-Instruction-tuning/  # Instruction tuning module
+│   ├── data/                  # Training data
+│   ├── train/                # Training related code
+│   ├── Inference/           # Inference related code
+│   └── model_lora/          # Fine-tuned model
+├── FinLLM-RAG/              # RAG enhancement module
+│   ├── data/               # Knowledge base data
+│   ├── inference/         # RAG inference code
+│   └── results/          # Output results
+└── scripts/              # Common scripts
+    ├── train.sh         # Training script
+    ├── train.bat       # Windows training script
+    ├── inference.sh    # Inference script
+    ├── inference.bat   # Windows inference script
+    ├── run_rag.sh      # RAG inference script
+    ├── run_rag.bat     # Windows RAG inference script
+    ├── evaluate.sh     # Evaluation script
+    └── evaluate.bat    # Windows evaluation script
 ```
 
-## 模块说明
+## Module Description
 
 ### 1. FinLLM-Instruction-tuning
 
-基于指令微调（Instruction-tuning）和LoRA（Low-Rank Adaptation）技术的模型微调模块。通过精心设计的指令模板和金融领域数据，提升模型对金融文本情绪的理解能力。
+A model fine-tuning module based on instruction tuning and LoRA (Low-Rank Adaptation) technology. It enhances the model's understanding of financial text sentiment through carefully designed instruction templates and financial domain data.
 
-主要特点：
-- 使用 DeepSeek-R1-Distill-Qwen-1.5B 作为基础模型
-- 采用 LoRA 技术进行高效微调
-- 支持 4-bit 量化训练
-- 提供完整的训练和推理脚本
+Key Features:
+- Uses DeepSeek-R1-Distill-Qwen-1.5B as the base model
+- Employs LoRA technology for efficient fine-tuning
+- Supports 4-bit quantization training
+- Provides complete training and inference scripts
 
-详细说明请参考 [FinLLM-Instruction-tuning/README.md](FinLLM-Instruction-tuning/README.md)
+For detailed information, please refer to [FinLLM-Instruction-tuning/README.md](FinLLM-Instruction-tuning/README.md)
 
 ### 2. FinLLM-RAG
 
-基于检索增强生成（RAG）技术的情绪分析增强模块。通过结合外部知识库，提供更准确、更可靠的金融文本情绪分析能力。
+A sentiment analysis enhancement module based on Retrieval-Augmented Generation (RAG) technology. It provides more accurate and reliable financial text sentiment analysis capabilities by incorporating external knowledge bases.
 
-主要特点：
-- 支持离线知识库（Phrasebank）和在线爬取数据
-- 基于向量数据库的相似度检索
-- 可配置的检索参数
-- 完整的评估指标
+Key Features:
+- Supports offline knowledge base (Phrasebank) and online crawling data
+- Similarity retrieval based on vector database
+- Configurable retrieval parameters
+- Comprehensive evaluation metrics
 
-详细说明请参考 [FinLLM-RAG/README.md](FinLLM-RAG/README.md)
+For detailed information, please refer to [FinLLM-RAG/README.md](FinLLM-RAG/README.md)
 
-## 快速开始
+## Path Configuration
 
-1. 环境配置：
+The project supports both Google Colab and local environment paths. You need to configure the paths in the respective Python files before running the scripts:
+
+1. Data Preparation (`FinLLM-Instruction-tuning/data/data_preparation.py`):
+```python
+# For local environment (uncomment to use):
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# TRAIN_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "instruction_formatted_data.jsonl")
+# TEST_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "validation_data.jsonl")
+
+# For Google Colab (default):
+DRIVE_ROOT = "/content/drive/FinLLM-Sentiment-Analysis/FinLLM-Instruction-tuning"
+TRAIN_OUTPUT_PATH = os.path.join(DRIVE_ROOT, "data", "instruction_formatted_data.jsonl")
+TEST_OUTPUT_PATH = os.path.join(DRIVE_ROOT, "data", "validation_data.jsonl")
+```
+
+2. Training Script (`FinLLM-Instruction-tuning/train/train.py`):
+   - Similar path configuration for model checkpoints and outputs
+   - Adjust paths based on your environment
+
+3. Inference Script (`FinLLM-Instruction-tuning/Inference/inference.py`):
+   - Configure input/output paths for your environment
+   - Update model path according to your setup
+
+Note: The scripts in the `scripts/` directory use relative paths, but the Python files they call may need path adjustments based on your environment.
+
+## Quick Start
+
+1. Environment Setup:
 ```bash
-# 创建并激活虚拟环境
+# Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 
-# 安装依赖
+# Install dependencies
 pip install -r requirements.txt
+
+# Configure paths in Python files
+# 1. Open data_preparation.py and adjust paths
+# 2. Open train.py and adjust paths
+# 3. Open inference.py and adjust paths
 ```
 
-2. 模型训练：
+2. Model Training:
 ```bash
 # Linux/Mac
-./scripts/train.sh
+./scripts/train.sh --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
 
 # Windows
-scripts\train.bat
+scripts\train.bat --model_name "my_model" --batch_size 4 --learning_rate 1e-4 --epochs 2
+
+# Default parameters if not specified:
+# --model_name: default_model
+# --batch_size: 8
+# --learning_rate: 2e-5
+# --epochs: 3
 ```
 
-3. 模型推理：
+3. Model Inference:
 ```bash
-# 使用原始模型推理
+# Using original model inference
 # Linux/Mac
-./scripts/inference.sh
+./scripts/inference.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt"
 
 # Windows
-scripts\inference.bat
+scripts\inference.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt"
 
-# 使用RAG增强推理
+# Using RAG-enhanced inference
 # Linux/Mac
-./scripts/run_rag.sh
+./scripts/run_rag.sh --model_path "FinLLM-Instruction-tuning/model_lora" --input_file "data/test_queries.txt" --knowledge_base "FinLLM-RAG/data/phrasebank"
 
 # Windows
-scripts\run_rag.bat
+scripts\run_rag.bat --model_path "FinLLM-Instruction-tuning\model_lora" --input_file "data\test_queries.txt" --knowledge_base "FinLLM-RAG\data\phrasebank"
 ```
 
-4. 结果评估：
+4. Result Evaluation:
 ```bash
 # Linux/Mac
-./scripts/evaluate.sh
+./scripts/evaluate.sh --model_path "FinLLM-Instruction-tuning/model_lora" --test_file "data/test_data.jsonl"
 
 # Windows
-scripts\evaluate.bat
+scripts\evaluate.bat --model_path "FinLLM-Instruction-tuning\model_lora" --test_file "data\test_data.jsonl"
 ```
 
-## 系统要求
+Note: All scripts support command-line parameters and will create logs in the `logs` directory. Make sure you have the correct permissions to execute the scripts and create log files.
+
+## System Requirements
 
 - Python 3.8+
-- CUDA 支持的 GPU（推荐）
-- 至少 8GB GPU 显存
-- 16GB+ 系统内存
+- CUDA-compatible GPU (recommended)
+- Minimum 8GB GPU memory
+- 16GB+ system memory
 
-## 注意事项
+## Important Notes
 
-1. 数据准备：
-   - 确保训练数据格式正确
-   - 根据需要选择使用离线或在线知识库
+1. Data Preparation:
+   - Ensure correct training data format
+   - Choose between offline or online knowledge base as needed
 
-2. 模型训练：
-   - 建议使用 GPU 进行训练
-   - 可以通过修改训练参数优化性能
+2. Model Training:
+   - GPU recommended for training
+   - Performance can be optimized by adjusting training parameters
 
-3. 推理部署：
-   - 支持 CPU 和 GPU 推理
-   - 可以根据需求调整批处理大小
+3. Inference Deployment:
+   - Supports both CPU and GPU inference
+   - Batch size can be adjusted based on requirements
 
-## 许可证
+## License
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request 来帮助改进项目。在提交代码前，请确保：
-1. 代码符合项目的编码规范
-2. 添加必要的注释和文档
-3. 更新相关的测试用例
+Issues and Pull Requests are welcome to help improve the project. Before submitting code, please ensure:
+1. Code follows the project's coding standards
+2. Necessary comments and documentation are added
+3. Related test cases are updated
